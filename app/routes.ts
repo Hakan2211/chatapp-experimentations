@@ -11,5 +11,6 @@ export default [
     route('dashboard', './routes/dashboard/index.tsx'),
     route('projects', './routes/dashboard/projects.tsx'),
     route('notes', './routes/dashboard/notes.tsx'),
+    route('education', './routes/dashboard/education.tsx'),
   ]),
 ] satisfies RouteConfig;

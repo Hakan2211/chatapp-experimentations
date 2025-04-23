@@ -10,6 +10,7 @@ import {
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
@@ -35,6 +36,7 @@ import {
   Command,
   Inbox,
   LayoutGrid,
+  Plus,
   Send,
   Trash2,
 } from 'lucide-react';
@@ -42,7 +44,40 @@ import { FileText } from 'lucide-react';
 import { GraduationCap } from 'lucide-react';
 import { Home } from 'lucide-react';
 import { cn } from '#/lib/utils';
-// This is sample data.
+import { useState } from 'react';
+import { Button } from './button';
+
+import { Input } from '#/components/input';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '#/components/ui/collapsible'; // Needed for Projects
+
+import {
+  LogOut,
+  Settings,
+  CreditCard,
+  User,
+  PlusCircle,
+  Folder,
+  MessageSquare,
+  BookOpen,
+  Search,
+  ChevronRight,
+  Star,
+  Clock,
+  File,
+  ArrowUpRight,
+} from 'lucide-react';
+import {
+  AccountPanelContent,
+  EducationPanelContent,
+  HomePanelContent,
+  NotesPanelContent,
+  ProjectsPanelContent,
+} from './sidebarUI/sidebarPanels';
+
 const data2 = {
   teams: [
     {
@@ -293,6 +328,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   );
   const [mails, setMails] = React.useState(data.mails);
   const { setOpen } = useSidebar();
+  const [selectedPanel, setSelectedPanel] = useState<PanelType>(PanelType.Home);
 
   return (
     <Sidebar
@@ -335,18 +371,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         }}
                         onClick={() => {
                           setActiveItem(item);
-                          const mail = data.mails.sort(
-                            () => Math.random() - 0.5
-                          );
-                          setMails(
-                            mail.slice(
-                              0,
-                              Math.max(5, Math.floor(Math.random() * 10) + 1)
-                            )
-                          );
+                          setSelectedPanel(item.type);
+                          // const mail = data.mails.sort(
+                          //   () => Math.random() - 0.5
+                          // );
+                          // setMails(
+                          //   mail.slice(
+                          //     0,
+                          //     Math.max(5, Math.floor(Math.random() * 10) + 1)
+                          //   )
+                          // );
                           setOpen(true);
                         }}
-                        isActive={activeItem?.label === item.label}
+                        // isActive={activeItem?.label === item.label}
+                        isActive={activeItem?.type === item.type}
                         className="px-2.5 md:px-2"
                       >
                         <Link to={item.path ?? '#'}>{item.icon}</Link>
@@ -366,15 +404,48 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <Sidebar collapsible="none" className="hidden flex-1 md:flex">
         <SidebarHeader className="gap-3.5 border-b border-[var(--sidebar-border-color)] p-4">
           <div className="flex w-full items-center justify-between">
-            {/* <Label className="flex items-center gap-2 text-sm"> */}
-            <span>More Information for the menu</span>
-            {/* <Switch className="shadow-none" /> */}
-            {/* </Label> */}
+            {/* Dynamic Title Based on Panel */}
+            <span className="font-medium text-base capitalize">
+              {selectedPanel === 'home' && 'Home'}
+              {selectedPanel === 'projects' && 'Projects'}
+              {selectedPanel === 'notes' && 'Notes'}
+              {selectedPanel === 'education' && 'Education Hub'}
+              {selectedPanel === 'account' && 'Account'}
+            </span>
+            {/* Optional: Add context-specific action button to header */}
+            {selectedPanel === 'projects' && (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7"
+                onClick={() => console.log('New Project Header')}
+              >
+                {' '}
+                <Plus className="h-4 w-4" />{' '}
+              </Button>
+            )}
+            {selectedPanel === 'notes' && (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7"
+                onClick={() => console.log('New Note Header')}
+              >
+                {' '}
+                <Plus className="h-4 w-4" />{' '}
+              </Button>
+            )}
+            {/* etc. */}
           </div>
           {/* <SidebarInput placeholder="Type to search..." /> */}
         </SidebarHeader>
         <SidebarContent>
           <SidebarGroup className="px-0">
+            {selectedPanel === 'home' && <HomePanelContent />}
+            {selectedPanel === 'projects' && <ProjectsPanelContent />}
+            {selectedPanel === 'notes' && <NotesPanelContent />}
+            {selectedPanel === 'education' && <EducationPanelContent />}
+            {selectedPanel === 'account' && <AccountPanelContent />}
             {/* <SidebarGroupContent>
               {mails.map((mail) => (
                 <a
@@ -399,3 +470,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     </Sidebar>
   );
 }
+
+// --------------------------------------------------------------------------------------
+// -----------------------------------------------Mock Data for Sidebar--------------------------------
+// --------------------------------------------------------------------------------------
