@@ -4,8 +4,6 @@ interface UserData {
   avatar: string;
 }
 
-// Mock data for Projects Panel (File Tree Structure)
-// Added 'id' for potential key prop usage and 'type'
 type ProjectFileTreeItem =
   | string // Represents a file name
   | [string, ...ProjectFileTreeItem[]]
@@ -216,7 +214,6 @@ import {
   SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
-  // SidebarMenuSub is not needed for the ProjectTree implementation below
 } from '#/components/sidebar'; // Adjust path as needed
 import { Input } from '#/components/input';
 import { Button } from '#/components/button';
@@ -227,10 +224,7 @@ import {
 } from '#/components/ui/collapsible'; // Needed for Projects
 import { cn } from '#/lib/utils'; // Adjust path as needed
 import {
-  Home,
-  LayoutGrid,
   FileText,
-  GraduationCap,
   LogOut,
   Settings,
   CreditCard,

@@ -1,75 +1,23 @@
-import * as React from 'react';
-
-import { TeamSwitcher } from '#/components/team-switcher';
+import { useState } from 'react';
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
 } from '#/components/sidebar';
-import {
-  RiChat1Line,
-  RiBardLine,
-  RiMickeyLine,
-  RiMicLine,
-  RiCheckDoubleLine,
-  RiBracesLine,
-  RiPlanetLine,
-  RiSeedlingLine,
-  RiSettings3Line,
-} from '@remixicon/react';
+
 import { Link } from 'react-router';
 import UserDropdown from './user-dropdown';
-import { TooltipTrigger } from './tooltip';
-import { TooltipContent } from './tooltip';
-import { Tooltip } from './tooltip';
-import {
-  ArchiveX,
-  Command,
-  Inbox,
-  LayoutGrid,
-  Plus,
-  Send,
-  Trash2,
-} from 'lucide-react';
-import { FileText } from 'lucide-react';
-import { GraduationCap } from 'lucide-react';
-import { Home } from 'lucide-react';
-import { cn } from '#/lib/utils';
-import { useState } from 'react';
+import { LayoutGrid, Plus, FileText, Home, GraduationCap } from 'lucide-react';
+
 import { Button } from './button';
 
-import { Input } from '#/components/input';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '#/components/ui/collapsible'; // Needed for Projects
-
-import {
-  LogOut,
-  Settings,
-  CreditCard,
-  User,
-  PlusCircle,
-  Folder,
-  MessageSquare,
-  BookOpen,
-  Search,
-  ChevronRight,
-  Star,
-  Clock,
-  File,
-  ArrowUpRight,
-} from 'lucide-react';
 import {
   AccountPanelContent,
   EducationPanelContent,
@@ -77,83 +25,6 @@ import {
   NotesPanelContent,
   ProjectsPanelContent,
 } from './sidebarUI/sidebarPanels';
-
-const data2 = {
-  teams: [
-    {
-      name: 'ArkDigital',
-      logo: 'https://res.cloudinary.com/dlzlfasou/image/upload/v1741345635/logo-01_upxvqe.png',
-    },
-    {
-      name: 'Acme Corp.',
-      logo: 'https://res.cloudinary.com/dlzlfasou/image/upload/v1741345635/logo-01_upxvqe.png',
-    },
-    {
-      name: 'Evil Corp.',
-      logo: 'https://res.cloudinary.com/dlzlfasou/image/upload/v1741345635/logo-01_upxvqe.png',
-    },
-  ],
-  navMain: [
-    {
-      title: 'Playground',
-      url: '#',
-      items: [
-        {
-          title: 'Projects',
-          url: '/projects',
-          icon: RiChat1Line,
-          isActive: true,
-        },
-        {
-          title: 'Notes',
-          url: '/notes',
-          icon: RiBardLine,
-        },
-        {
-          title: 'Home',
-          url: '/dashboard',
-          icon: RiMickeyLine,
-        },
-        {
-          title: 'Audio',
-          url: '#',
-          icon: RiMicLine,
-        },
-        {
-          title: 'Metrics',
-          url: '#',
-          icon: RiCheckDoubleLine,
-        },
-        {
-          title: 'Documentation',
-          url: '#',
-          icon: RiBracesLine,
-        },
-      ],
-    },
-    {
-      title: 'More',
-      url: '#',
-      items: [
-        {
-          title: 'Community',
-          url: '#',
-          icon: RiPlanetLine,
-        },
-        {
-          title: 'Help Centre',
-          url: '#',
-          icon: RiSeedlingLine,
-        },
-        {
-          title: 'Settings',
-          url: '#',
-          icon: RiSettings3Line,
-        },
-      ],
-    },
-  ],
-};
 
 enum PanelType {
   Account = 'account',
@@ -200,133 +71,11 @@ const iconBarIcons: IconBarItem[] = [
   },
 ];
 
-const data = {
-  user: {
-    name: 'shadcn',
-    email: 'm@example.com',
-    avatar: '/avatars/shadcn.jpg',
-  },
-  navMain: [
-    {
-      title: 'Inbox',
-      url: '#',
-      icon: Inbox,
-      isActive: true,
-    },
-    {
-      title: 'Drafts',
-      url: '#',
-      icon: FileText,
-      isActive: false,
-    },
-    {
-      title: 'Sent',
-      url: '#',
-      icon: Send,
-      isActive: false,
-    },
-    {
-      title: 'Junk',
-      url: '#',
-      icon: ArchiveX,
-      isActive: false,
-    },
-    {
-      title: 'Trash',
-      url: '#',
-      icon: Trash2,
-      isActive: false,
-    },
-  ],
-  mails: [
-    {
-      name: 'William Smith',
-      email: 'williamsmith@example.com',
-      subject: 'Meeting Tomorrow',
-      date: '09:34 AM',
-      teaser:
-        'Hi team, just a reminder about our meeting tomorrow at 10 AM.\nPlease come prepared with your project updates.',
-    },
-    {
-      name: 'Alice Smith',
-      email: 'alicesmith@example.com',
-      subject: 'Re: Project Update',
-      date: 'Yesterday',
-      teaser:
-        "Thanks for the update. The progress looks great so far.\nLet's schedule a call to discuss the next steps.",
-    },
-    {
-      name: 'Bob Johnson',
-      email: 'bobjohnson@example.com',
-      subject: 'Weekend Plans',
-      date: '2 days ago',
-      teaser:
-        "Hey everyone! I'm thinking of organizing a team outing this weekend.\nWould you be interested in a hiking trip or a beach day?",
-    },
-    {
-      name: 'Emily Davis',
-      email: 'emilydavis@example.com',
-      subject: 'Re: Question about Budget',
-      date: '2 days ago',
-      teaser:
-        "I've reviewed the budget numbers you sent over.\nCan we set up a quick call to discuss some potential adjustments?",
-    },
-    {
-      name: 'Michael Wilson',
-      email: 'michaelwilson@example.com',
-      subject: 'Important Announcement',
-      date: '1 week ago',
-      teaser:
-        "Please join us for an all-hands meeting this Friday at 3 PM.\nWe have some exciting news to share about the company's future.",
-    },
-    {
-      name: 'Sarah Brown',
-      email: 'sarahbrown@example.com',
-      subject: 'Re: Feedback on Proposal',
-      date: '1 week ago',
-      teaser:
-        "Thank you for sending over the proposal. I've reviewed it and have some thoughts.\nCould we schedule a meeting to discuss my feedback in detail?",
-    },
-    {
-      name: 'David Lee',
-      email: 'davidlee@example.com',
-      subject: 'New Project Idea',
-      date: '1 week ago',
-      teaser:
-        "I've been brainstorming and came up with an interesting project concept.\nDo you have time this week to discuss its potential impact and feasibility?",
-    },
-    {
-      name: 'Olivia Wilson',
-      email: 'oliviawilson@example.com',
-      subject: 'Vacation Plans',
-      date: '1 week ago',
-      teaser:
-        "Just a heads up that I'll be taking a two-week vacation next month.\nI'll make sure all my projects are up to date before I leave.",
-    },
-    {
-      name: 'James Martin',
-      email: 'jamesmartin@example.com',
-      subject: 'Re: Conference Registration',
-      date: '1 week ago',
-      teaser:
-        "I've completed the registration for the upcoming tech conference.\nLet me know if you need any additional information from my end.",
-    },
-    {
-      name: 'Sophia White',
-      email: 'sophiawhite@example.com',
-      subject: 'Team Dinner',
-      date: '1 week ago',
-      teaser:
-        "To celebrate our recent project success, I'd like to organize a team dinner.\nAre you available next Friday evening? Please let me know your preferences.",
-    },
-  ],
-};
-
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const [activeItem, setActiveItem] = React.useState<IconBarItem | null>(
+  const [activeItem, setActiveItem] = useState<IconBarItem | null>(
     iconBarIcons[0] ?? null
   );
-  const [mails, setMails] = React.useState(data.mails);
+
   const { setOpen } = useSidebar();
   const [selectedPanel, setSelectedPanel] = useState<PanelType>(PanelType.Home);
 
@@ -372,18 +121,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         onClick={() => {
                           setActiveItem(item);
                           setSelectedPanel(item.type);
-                          // const mail = data.mails.sort(
-                          //   () => Math.random() - 0.5
-                          // );
-                          // setMails(
-                          //   mail.slice(
-                          //     0,
-                          //     Math.max(5, Math.floor(Math.random() * 10) + 1)
-                          //   )
-                          // );
                           setOpen(true);
                         }}
-                        // isActive={activeItem?.label === item.label}
                         isActive={activeItem?.type === item.type}
                         className="px-2.5 md:px-2"
                       >
@@ -431,11 +170,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 className="h-7 w-7"
                 onClick={() => console.log('New Note Header')}
               >
-                {' '}
                 <Plus className="h-4 w-4" />{' '}
               </Button>
             )}
-            {/* etc. */}
           </div>
           {/* <SidebarInput placeholder="Type to search..." /> */}
         </SidebarHeader>
@@ -446,31 +183,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             {selectedPanel === 'notes' && <NotesPanelContent />}
             {selectedPanel === 'education' && <EducationPanelContent />}
             {selectedPanel === 'account' && <AccountPanelContent />}
-            {/* <SidebarGroupContent>
-              {mails.map((mail) => (
-                <a
-                  href="#"
-                  key={mail.email}
-                  className="flex flex-col items-start gap-2 whitespace-nowrap border-b p-4 text-sm leading-tight last:border-b-0 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                >
-                  <div className="flex w-full items-center gap-2">
-                    <span>{mail.name}</span>{' '}
-                    <span className="ml-auto text-xs">{mail.date}</span>
-                  </div>
-                  <span className="font-medium">{mail.subject}</span>
-                  <span className="line-clamp-2 w-[260px] whitespace-break-spaces text-xs">
-                    {mail.teaser}
-                  </span>
-                </a>
-              ))}
-            </SidebarGroupContent> */}
           </SidebarGroup>
         </SidebarContent>
       </Sidebar>
     </Sidebar>
   );
 }
-
-// --------------------------------------------------------------------------------------
-// -----------------------------------------------Mock Data for Sidebar--------------------------------
-// --------------------------------------------------------------------------------------
