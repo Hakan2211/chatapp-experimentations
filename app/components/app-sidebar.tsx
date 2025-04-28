@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { NavLink, useLoaderData, useLocation } from 'react-router';
+
 import {
   Sidebar,
   SidebarContent,
@@ -11,19 +13,27 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '#/components/sidebar';
-
-import { Link } from 'react-router';
 import UserDropdown from './user-dropdown';
-import { LayoutGrid, Plus, FileText, Home, GraduationCap } from 'lucide-react';
+import {
+  FileText,
+  Home,
+  GraduationCap,
+  LayoutGrid,
+  Plus,
+  User,
+} from 'lucide-react';
 
 import { Button } from './button';
-
 import {
   AccountPanelContent,
   EducationPanelContent,
   HomePanelContent,
   NotesPanelContent,
   ProjectsPanelContent,
+  type MockProjectFilesData,
+  type Note,
+  type HomeProjectItem,
+  type ProjectTreeOptions,
 } from './sidebarUI/sidebarPanels';
 
 enum PanelType {
@@ -33,18 +43,10 @@ enum PanelType {
   Notes = 'notes',
   Education = 'education',
 }
+
 const iconSize = 'h-5 w-5';
 
-// Define a type for the icon bar items
-type IconBarItem = {
-  type: PanelType;
-  label: string;
-  icon: React.ReactElement; // Type as React Element
-  path?: string; // Path can be optional
-};
-
-const iconBarIcons: IconBarItem[] = [
-  // Apply the type
+const iconBarIcons = [
   {
     type: PanelType.Home,
     label: 'Home',
@@ -71,13 +73,61 @@ const iconBarIcons: IconBarItem[] = [
   },
 ];
 
+const transformProjectsForHome = (
+  data: MockProjectFilesData
+): HomeProjectItem[] => {
+  // Simple transformation: Takes top-level items, assumes they are projects
+  // TODO: This is a basic example; adapt it based on how your actual
+  // MockProjectFilesData maps to HomeProjectItem (e.g., extracting options)
+  return data.tree
+    .map((item, index): HomeProjectItem | null => {
+      if (typeof item === 'string') {
+        // Handle top-level files if needed, or filter them out
+        return null; // Or create a default HomeProjectItem
+      }
+      // Assuming top-level arrays are projects
+      const name = item[0];
+      const options =
+        typeof item[item.length - 1] === 'object' &&
+        !Array.isArray(item[item.length - 1])
+          ? (item[item.length - 1] as ProjectTreeOptions)
+          : {};
+      return {
+        id: `project-${name}-${index}`, // Generate a unique ID
+        name: name,
+        badge: 'Mock', // Add appropriate badge logic
+        lastActive: 'Unknown', // Add appropriate lastActive logic
+        starred: !!options.starred, // Ensure boolean (handles undefined)
+      };
+    })
+    .filter((p): p is HomeProjectItem => p !== null);
+};
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const [activeItem, setActiveItem] = useState<IconBarItem | null>(
-    iconBarIcons[0] ?? null
+  const { projects: nestedProjectsData, notes } = useLoaderData() as {
+    projects: MockProjectFilesData;
+    notes: Note[];
+  };
+
+  const homePanelProjects = useMemo(
+    () => transformProjectsForHome(nestedProjectsData),
+    [nestedProjectsData]
   );
 
-  const { setOpen } = useSidebar();
-  const [selectedPanel, setSelectedPanel] = useState<PanelType>(PanelType.Home);
+  const location = useLocation();
+  const [selectedPanel, setSelectedPanel] = React.useState<PanelType>(
+    PanelType.Home
+  );
+
+  React.useEffect(() => {
+    const path = location.pathname;
+    const matchingIcon = iconBarIcons.find((icon) =>
+      path.startsWith(icon.path)
+    );
+    if (matchingIcon) {
+      setSelectedPanel(matchingIcon.type);
+    }
+  }, [location.pathname]);
 
   return (
     <Sidebar
@@ -87,80 +137,93 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     >
       <Sidebar
         collapsible="none"
-        className="!w-[calc(var(--sidebar-width-icon)_+_1px)] border-r border-[var(--sidebar-border-color)]"
+        className="!w-[calc(var(--sidebar-width-icon)_+_1px)] border-r border-[var(--sidebar-border-color)] flex flex-col"
       >
-        <SidebarHeader>
+        <SidebarHeader className="mt-2">
           <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton size="lg" asChild className="md:h-8 md:p-0">
-                <a href="#">
-                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+            <SidebarMenuItem className="">
+              <SidebarMenuButton
+                asChild
+                className="!p-0 group-data-[collapsible=icon]:p-0! "
+                tooltip={{
+                  children: 'My Account',
+                  side: 'right',
+                  sideOffset: 10,
+                }}
+              >
+                <div>
+                  <div className="bg-sidebar-primary text-sidebar-primary-foreground rounded-lg">
+                    {/* Replace UserDropdown with static content or fetch user data */}
                     <UserDropdown />
+                    {/* <span>JD</span> */}
                   </div>
                   <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">Acme Inc</span>
-                    <span className="truncate text-xs">Enterprise</span>
+                    <span className="truncate font-semibold">John Doe</span>
+                    <span className="truncate text-xs">Free</span>
                   </div>
-                </a>
+                </div>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarHeader>
-        <SidebarContent>
+        <SidebarContent className="items-center">
           <SidebarGroup>
-            <SidebarGroupContent className="px-1.5 md:px-0">
-              <SidebarMenu>
-                {iconBarIcons.map((item) => {
-                  return (
-                    <SidebarMenuItem key={item.label}>
-                      <SidebarMenuButton
-                        tooltip={{
-                          children: item.label,
-                          hidden: false,
-                        }}
-                        onClick={() => {
-                          setActiveItem(item);
-                          setSelectedPanel(item.type);
-                          setOpen(true);
-                        }}
-                        isActive={activeItem?.type === item.type}
-                        className="px-2.5 md:px-2"
+            <SidebarGroupContent className="">
+              <SidebarMenu className="flex flex-col gap-2">
+                {iconBarIcons.map((item) => (
+                  <SidebarMenuItem className="cursor-pointer" key={item.label}>
+                    <SidebarMenuButton
+                      tooltip={{
+                        children: item.label,
+                        side: 'right',
+                        sideOffset: 10,
+                      }}
+                      isActive={item.path === location.pathname}
+                      asChild
+                    >
+                      <NavLink
+                        className="cursor-pointer block"
+                        to={item.path}
+                        end={item.path === '/dashboard'}
                       >
-                        <Link to={item.path ?? '#'}>{item.icon}</Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
+                        {React.cloneElement(item.icon, {
+                          className: iconSize,
+                        })}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
-        <SidebarFooter>User</SidebarFooter>
+        <SidebarFooter className="">
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                onClick={() => setSelectedPanel(PanelType.Account)}
+              >
+                <User className="h-5 w-5" />
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
       </Sidebar>
 
-      {/* This is the second sidebar */}
-      {/* We disable collapsible and let it fill remaining space */}
       <Sidebar collapsible="none" className="hidden flex-1 md:flex">
         <SidebarHeader className="gap-3.5 border-b border-[var(--sidebar-border-color)] p-4">
           <div className="flex w-full items-center justify-between">
-            {/* Dynamic Title Based on Panel */}
             <span className="font-medium text-base capitalize">
-              {selectedPanel === 'home' && 'Home'}
-              {selectedPanel === 'projects' && 'Projects'}
-              {selectedPanel === 'notes' && 'Notes'}
-              {selectedPanel === 'education' && 'Education Hub'}
-              {selectedPanel === 'account' && 'Account'}
+              {selectedPanel}
             </span>
-            {/* Optional: Add context-specific action button to header */}
             {selectedPanel === 'projects' && (
               <Button
                 size="icon"
                 variant="ghost"
                 className="h-7 w-7"
-                onClick={() => console.log('New Project Header')}
+                onClick={() => console.log('New Project')}
               >
-                {' '}
-                <Plus className="h-4 w-4" />{' '}
+                <Plus className="h-4 w-4" />
               </Button>
             )}
             {selectedPanel === 'notes' && (
@@ -168,19 +231,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 size="icon"
                 variant="ghost"
                 className="h-7 w-7"
-                onClick={() => console.log('New Note Header')}
+                onClick={() => console.log('New Note')}
               >
-                <Plus className="h-4 w-4" />{' '}
+                <Plus className="h-4 w-4" />
               </Button>
             )}
           </div>
-          {/* <SidebarInput placeholder="Type to search..." /> */}
         </SidebarHeader>
         <SidebarContent>
           <SidebarGroup className="px-0">
-            {selectedPanel === 'home' && <HomePanelContent />}
-            {selectedPanel === 'projects' && <ProjectsPanelContent />}
-            {selectedPanel === 'notes' && <NotesPanelContent />}
+            {selectedPanel === 'home' && (
+              <HomePanelContent projects={homePanelProjects} />
+            )}
+            {selectedPanel === 'projects' && (
+              <ProjectsPanelContent projects={nestedProjectsData} />
+            )}
+            {selectedPanel === 'notes' && <NotesPanelContent notes={notes} />}
             {selectedPanel === 'education' && <EducationPanelContent />}
             {selectedPanel === 'account' && <AccountPanelContent />}
           </SidebarGroup>

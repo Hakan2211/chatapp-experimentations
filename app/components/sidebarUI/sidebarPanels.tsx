@@ -4,17 +4,19 @@ interface UserData {
   avatar: string;
 }
 
+// Mock data for Projects Panel (File Tree Structure)
+// Added 'id' for potential key prop usage and 'type'
 type ProjectFileTreeItem =
   | string // Represents a file name
   | [string, ...ProjectFileTreeItem[]]
   | [string, ...ProjectFileTreeItem[], ProjectTreeOptions]; // With options [folderName, item1, item2, ..., options]
 
-interface ProjectTreeOptions {
+export interface ProjectTreeOptions {
   starred?: boolean;
   // Add other potential metadata here
 }
 
-interface MockProjectFilesData {
+export interface MockProjectFilesData {
   tree: ProjectFileTreeItem[];
 }
 
@@ -27,7 +29,7 @@ interface HomeActivityItem {
   href?: string; // For potential navigation
 }
 
-interface HomeProjectItem {
+export interface HomeProjectItem {
   id: string;
   name: string;
   badge: string;
@@ -37,7 +39,7 @@ interface HomeProjectItem {
 }
 
 // Mock data for Notes Panel
-interface Note {
+export interface Note {
   id: string;
   title: string;
   snippet: string;
@@ -142,7 +144,8 @@ const mockHomeProjects: HomeProjectItem[] = [
   },
 ];
 
-const mockNotes: Note[] = [
+// Export mockNotes
+export const mockNotes: Note[] = [
   {
     id: 'note-1',
     title: 'AI Ethics Idea',
@@ -214,6 +217,7 @@ import {
   SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
+  // SidebarMenuSub is not needed for the ProjectTree implementation below
 } from '#/components/sidebar'; // Adjust path as needed
 import { Input } from '#/components/input';
 import { Button } from '#/components/button';
@@ -224,7 +228,10 @@ import {
 } from '#/components/ui/collapsible'; // Needed for Projects
 import { cn } from '#/lib/utils'; // Adjust path as needed
 import {
+  Home,
+  LayoutGrid,
   FileText,
+  GraduationCap,
   LogOut,
   Settings,
   CreditCard,
@@ -241,6 +248,8 @@ import {
   File,
   ArrowUpRight,
 } from 'lucide-react';
+import type { SidebarData } from '#/routes/dashboard/layout';
+import { Link } from 'react-router';
 
 function updateStarredStatus(
   items: ProjectFileTreeItem[],
@@ -313,34 +322,34 @@ function updateStarredStatus(
   });
 }
 
+interface HomePanelContentProps {
+  projects: HomeProjectItem[];
+}
+
 // --- 1. Home Panel Content ---
-export function HomePanelContent() {
+export function HomePanelContent({ projects }: HomePanelContentProps) {
   return (
     <>
-      {/* Section: Recent Activity */}
       <SidebarGroup className="py-3">
-        <SidebarGroupLabel className="px-4 text-xs font-medium  uppercase tracking-wide mb-1">
+        <SidebarGroupLabel className="px-4 text-xs font-medium uppercase tracking-wide mb-1">
           Recent Activity
         </SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
+            {/* Static activity for now */}
             {mockHomeActivity.map((item) => (
               <SidebarMenuItem key={item.id}>
-                <SidebarMenuButton
-                  onClick={() => console.log('Navigating to:', item.href)}
-                >
+                <SidebarMenuButton>
                   <span className="flex items-center gap-2 w-full">
-                    {item.icon ? (
+                    {item.icon && (
                       <span className="flex-shrink-0 w-4 h-4 flex items-center justify-center">
                         {item.icon}
                       </span>
-                    ) : (
-                      <span className="w-4 h-4 flex-shrink-0"></span> // Placeholder for alignment
                     )}
                     <span className="flex-1 text-sm truncate">
                       {item.label}
                     </span>
-                    <span className="text-xs  ml-auto whitespace-nowrap">
+                    <span className="text-xs ml-auto whitespace-nowrap">
                       {item.detail}
                     </span>
                   </span>
@@ -351,41 +360,41 @@ export function HomePanelContent() {
         </SidebarGroupContent>
       </SidebarGroup>
 
-      {/* Section: Active Projects */}
       <SidebarGroup className="py-3 border-t border-[var(--sidebar-border-color)]">
-        <SidebarGroupLabel className="px-4 text-xs font-medium  uppercase tracking-wide mb-1">
+        <SidebarGroupLabel className="px-4 text-xs font-medium uppercase tracking-wide mb-1">
           Active Projects
         </SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
-            {mockHomeProjects.map((p) => (
+            {projects.map((p) => (
               <SidebarMenuItem key={p.id}>
-                <SidebarMenuButton
-                  onClick={() => console.log('Navigating to project:', p.id)}
-                >
-                  <span className="flex items-center gap-2 w-full">
-                    {p.starred ? (
-                      <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400 flex-shrink-0" />
-                    ) : (
-                      <span className="w-3.5 h-3.5 flex-shrink-0"></span> // Placeholder for alignment
-                    )}
-                    <span className="flex-1 text-sm truncate">{p.name}</span>
-                    {p.badge && <SidebarMenuBadge>{p.badge}</SidebarMenuBadge>}
-                  </span>
+                <SidebarMenuButton asChild>
+                  <Link to={`/projects/${p.id}`}>
+                    <span className="flex items-center gap-2 w-full">
+                      {p.starred ? (
+                        <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400 flex-shrink-0" />
+                      ) : (
+                        <span className="w-3.5 h-3.5 flex-shrink-0"></span>
+                      )}
+                      <span className="flex-1 text-sm truncate">{p.name}</span>
+                      {p.badge && (
+                        <SidebarMenuBadge>{p.badge}</SidebarMenuBadge>
+                      )}
+                    </span>
+                  </Link>
                 </SidebarMenuButton>
-                <div className="text-xs  ml-2">{p.lastActive}</div>
+                <div className="text-xs ml-2">{p.lastActive}</div>
               </SidebarMenuItem>
             ))}
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
 
-      {/* Footer Action */}
       <SidebarGroup className="mt-auto p-4 border-t border-[var(--sidebar-border-color)]">
         <Button
           variant="outline"
           size="sm"
-          className="w-full rounded-md text-xs h-8 border-black/10 hover:border-black/20 hover:bg-foreground/50 bg-foreground hover:text-muted-foreground text-muted-foreground"
+          className="w-full rounded-md text-xs h-8"
         >
           View All Activity
         </Button>
@@ -551,67 +560,58 @@ function ProjectTree({
   return null;
 }
 
-export function ProjectsPanelContent() {
-  const [searchTerm, setSearchTerm] = useState('');
-  // State holds the current tree structure, initialized from mock data
-  const [projectFiles, setProjectFiles] =
-    useState<MockProjectFilesData>(mockProjectFiles);
+// Update props to accept MockProjectFilesData
+interface ProjectsPanelContentProps {
+  projects: MockProjectFilesData;
+}
 
-  // Function to handle toggling the star status
-  const handleToggleStar = useCallback((pathToToggle: string[]) => {
-    console.log('Toggling star for path:', pathToToggle);
-    setProjectFiles((currentProjectFiles) => {
-      // Create a new object to ensure state update
-      const updatedTree = updateStarredStatus(
-        currentProjectFiles.tree,
-        pathToToggle
-      );
-      return { tree: updatedTree };
+export function ProjectsPanelContent({ projects }: ProjectsPanelContentProps) {
+  const [searchTerm, setSearchTerm] = useState(''); // Keep search?
+  const [projectData, setProjectData] = useState(projects); // State to hold mutable data
+
+  // Callback function to update the starred status in the state
+  const handleToggleStar = useCallback((path: string[]) => {
+    setProjectData((currentData) => {
+      const updatedTree = updateStarredStatus(currentData.tree, path);
+      return { ...currentData, tree: updatedTree };
     });
-    // Here you would typically also make an API call to persist the change
-    // e.g., api.toggleFavorite(pathToToggle.join('/'));
-  }, []); // Empty dependency array means this function is created once
+  }, []);
 
-  // Filtering logic (can be improved for deep filtering)
-  const filteredTree = projectFiles.tree.filter((item) => {
-    const name = typeof item === 'string' ? item : item[0];
-    return name.toLowerCase().includes(searchTerm.toLowerCase());
-  });
+  // TODO: Implement filtering for the tree structure if search is kept
+  // const filteredProjects = projects.tree.filter((project) =>
+  //   project.name.toLowerCase().includes(searchTerm.toLowerCase())
+  // );
+
   return (
     <>
-      {/* Search Input */}
       <SidebarGroup className="p-4 border-b border-[var(--sidebar-border-color)]">
         <div className="relative">
-          <Search
-            className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-black/40"
-            aria-hidden="true"
-          />
+          <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-black/40" />
           <Input
-            placeholder="Search projects..."
-            className="pl-8 h-9 rounded-md bg-white border-black/10 text-sm focus-visible:ring-1 focus-visible:ring-black/20 focus-visible:ring-offset-0"
+            placeholder="Search projects..." // Search needs rework for tree
+            className="pl-8 h-9 rounded-md bg-white border-black/10 text-sm"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            aria-label="Search projects"
           />
         </div>
-        {/* Add Filters Buttons here if needed (e.g., Starred, Recent) */}
       </SidebarGroup>
 
-      {/* Project File Tree */}
+      {/* Render the Project Tree */}
       <SidebarGroup className="flex-1 overflow-y-auto py-2">
         <SidebarGroupContent>
           <SidebarMenu>
-            {filteredTree.length > 0 ? (
-              filteredTree.map((item, index) => {
-                // Determine the name for the initial path segment
+            {' '}
+            {/* SidebarMenu likely wraps the tree items internally */}
+            {projectData.tree.length > 0 ? (
+              projectData.tree.map((item, index) => {
                 const itemName = typeof item === 'string' ? item : item[0];
                 return (
                   <ProjectTree
-                    key={`${itemName}-${index}`} // Use name for better key stability
+                    key={`${itemName}-${index}`}
                     item={item}
                     level={0}
-                    path={[itemName]} // Initial path is just the item's name
-                    onToggleStar={handleToggleStar} // Pass the handler down
+                    path={[itemName]} // Initial path for top-level items
+                    onToggleStar={handleToggleStar} // Pass the callback
                   />
                 );
               })
@@ -624,65 +624,54 @@ export function ProjectsPanelContent() {
         </SidebarGroupContent>
       </SidebarGroup>
 
-      {/* Footer Action */}
       <SidebarGroup className="mt-auto p-4 border-t border-[var(--sidebar-border-color)]">
-        <Button
-          className="w-full rounded-md h-9 text-sm font-medium"
-          onClick={() => console.log('New Project')}
-        >
-          <PlusCircle className="h-4 w-4 mr-2" aria-hidden="true" /> New Project
+        <Button className="w-full rounded-md h-9 text-sm font-medium">
+          <PlusCircle className="h-4 w-4 mr-2" /> New Project
         </Button>
       </SidebarGroup>
     </>
   );
 }
 
+interface NotesPanelContentProps {
+  notes: Note[];
+}
 // --- 3. Notes Panel Content ---
-export function NotesPanelContent() {
+export function NotesPanelContent({ notes }: NotesPanelContentProps) {
   const [filter, setFilter] = useState<'all' | 'solo' | 'group'>('all');
-  const filteredNotes = mockNotes.filter(
+  const filteredNotes = notes.filter(
     (n) => filter === 'all' || n.type === filter
   );
 
   return (
     <>
-      {/* Filters */}
       <SidebarGroup className="p-4 border-b border-[var(--sidebar-border-color)]">
         <div className="flex items-center gap-1">
           <Button
             variant={filter === 'all' ? 'secondary' : 'ghost'}
             size="sm"
             onClick={() => setFilter('all')}
-            className="rounded-md h-7 text-xs px-2.5"
           >
-            {' '}
-            All{' '}
+            All
           </Button>
           <Button
             variant={filter === 'solo' ? 'secondary' : 'ghost'}
             size="sm"
             onClick={() => setFilter('solo')}
-            className="rounded-md h-7 text-xs px-2.5"
           >
-            {' '}
-            Solo{' '}
+            Solo
           </Button>
           <Button
             variant={filter === 'group' ? 'secondary' : 'ghost'}
             size="sm"
             onClick={() => setFilter('group')}
-            className="rounded-md h-7 text-xs px-2.5"
           >
-            {' '}
-            Group{' '}
+            Group
           </Button>
         </div>
       </SidebarGroup>
 
-      {/* Notes List */}
       <SidebarGroup className="flex-1 overflow-y-auto py-2">
-        {' '}
-        {/* Scrollable */}
         <SidebarGroupContent>
           {filteredNotes.length > 0 ? (
             <SidebarMenu>
@@ -691,10 +680,7 @@ export function NotesPanelContent() {
                   key={note.id}
                   className="block p-0 hover:bg-transparent"
                 >
-                  <SidebarMenuButton
-                    onClick={() => console.log('Open Note:', note.id)}
-                    className="h-auto flex-col items-start whitespace-normal py-2.5 px-4 group/note hover:bg-black/[0.02] rounded-md mx-2 my-0.5" // Style the button itself
-                  >
+                  <SidebarMenuButton className="h-auto flex-col items-start whitespace-normal py-2.5 px-4 hover:bg-black/[0.02] rounded-md mx-2 my-0.5">
                     <div className="flex items-center justify-between w-full mb-1">
                       <h4 className="font-medium text-sm truncate">
                         {note.title}
@@ -704,7 +690,7 @@ export function NotesPanelContent() {
                     <p className="text-xs text-gray-400 mb-1 line-clamp-2 w-full">
                       {note.snippet}
                     </p>
-                    <div className="text-xs text-gray-500  flex items-center gap-1 w-full">
+                    <div className="text-xs text-gray-500 flex items-center gap-1 w-full">
                       <Clock className="h-3 w-3" />
                       {note.timestamp}
                     </div>
@@ -715,7 +701,7 @@ export function NotesPanelContent() {
           ) : (
             <div className="py-12 text-center flex flex-col items-center gap-3 px-4">
               <div className="h-10 w-10 rounded-full bg-black/5 flex items-center justify-center">
-                <FileText className="h-5 w-5 " />
+                <FileText className="h-5 w-5" />
               </div>
               <div className="space-y-1">
                 <p className="text-sm font-medium">No notes found</p>
@@ -728,19 +714,14 @@ export function NotesPanelContent() {
         </SidebarGroupContent>
       </SidebarGroup>
 
-      {/* Footer Action */}
       <SidebarGroup className="mt-auto p-4 border-t border-[var(--sidebar-border-color)]">
-        <Button
-          className="w-full rounded-md h-9 text-sm font-medium"
-          onClick={() => console.log('New Note')}
-        >
-          <PlusCircle className="h-4 w-4 mr-2" aria-hidden="true" /> New Note
+        <Button className="w-full rounded-md h-9 text-sm font-medium">
+          <PlusCircle className="h-4 w-4 mr-2" /> New Note
         </Button>
       </SidebarGroup>
     </>
   );
 }
-
 // --- 4. Education Panel Content ---
 export function EducationPanelContent() {
   // Group resources by topic for display

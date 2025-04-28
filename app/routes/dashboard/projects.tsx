@@ -14,6 +14,17 @@ import type {
   PanelGroupOnLayout,
 } from 'react-resizable-panels';
 import type { ImperativePanelGroupHandle } from 'react-resizable-panels';
+import { useIsMobile } from '#/hooks/use-mobile';
+import Chat from '#/components/chat';
+import { ChatMessage } from '#/components/chat-message';
+import {
+  Breadcrumb,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+  BreadcrumbLink,
+  BreadcrumbItem,
+  BreadcrumbList,
+} from '#/components/breadcrumb';
 
 const DEFAULT_LAYOUT = [67, 33];
 const COLLAPSED_SIZE = 0;
@@ -24,6 +35,7 @@ export default function Projects() {
   const panelGroupRef = useRef<ImperativePanelGroupHandle>(null);
   const firstPanelRef = useRef<ImperativePanelHandle>(null);
   const secondPanelRef = useRef<ImperativePanelHandle>(null);
+  const isMobile = useIsMobile();
 
   const [layout, setLayout] = useState<number[]>(DEFAULT_LAYOUT);
 
@@ -50,46 +62,56 @@ export default function Projects() {
 
   // --- Keyboard Shortcuts ---
   useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.ctrlKey || event.metaKey) {
-        let handled = false;
-        switch (event.key.toLowerCase()) {
-          case 'arrowleft': // Collapse Right Panel
-            if (secondPanelRef.current && !isSecondPanelCollapsed) {
-              secondPanelRef.current.collapse();
+    if (!isMobile) {
+      const handleKeyDown = (event: KeyboardEvent) => {
+        if (event.ctrlKey || event.metaKey) {
+          let handled = false;
+          switch (event.key.toLowerCase()) {
+            case 'arrowleft': // Collapse Right Panel
+              if (secondPanelRef.current && !isSecondPanelCollapsed) {
+                secondPanelRef.current.collapse();
+                handled = true;
+              }
+              break;
+            case 'arrowright': // Collapse Left Panel
+              if (firstPanelRef.current && !isFirstPanelCollapsed) {
+                firstPanelRef.current.collapse();
+                handled = true;
+              }
+              break;
+            case 'r': // Reset
+              resetLayout();
               handled = true;
-            }
-            break;
-          case 'arrowright': // Collapse Left Panel
-            if (firstPanelRef.current && !isFirstPanelCollapsed) {
-              firstPanelRef.current.collapse();
-              handled = true;
-            }
-            break;
-          case 'r': // Reset
-            resetLayout();
-            handled = true;
-            break;
+              break;
+          }
+          if (handled) event.preventDefault();
         }
-        if (handled) event.preventDefault();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [resetLayout, layout, isFirstPanelCollapsed, isSecondPanelCollapsed]); // Dependencies updated
+      };
+
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [
+    isMobile,
+    resetLayout,
+    layout,
+    isFirstPanelCollapsed,
+    isSecondPanelCollapsed,
+  ]); // Dependencies updated
 
   // --- Framer Motion Variants ---
   const panelVariants = {
     visible: { opacity: 1, transition: { duration: 0.2, ease: 'easeOut' } },
     hidden: { opacity: 0.4, transition: { duration: 0.2, ease: 'easeOut' } },
   };
+
   return (
-    <div className="hidden lg:flex flex-1 h-full w-full">
+    <div className="flex flex-1 h-full w-full">
       {/* Ensure PanelGroup allows overflow for indicators/handles */}
       <ResizablePanelGroup
         ref={panelGroupRef}
         direction="horizontal"
-        className="relative flex-1 rounded-lg border border-gray-200/80 dark:border-gray-800/80 bg-background dark:bg-background"
+        className="relative flex-1 rounded-lg border border-gray-200/80  dark:border-gray-800/80 bg-background dark:bg-background"
         onLayout={handleLayout}
         autoSaveId="dashboard-layout" // Persist layout
       >
@@ -115,9 +137,27 @@ export default function Projects() {
               transition={{ duration: 0.15 }} // Faster fade for content
               className="flex flex-col h-full"
             >
-              <PanelHeader title="Column One" />
-              <div className="flex-1 p-4 lg:p-5">
+              <PanelHeader title="">
+                <Breadcrumb>
+                  <BreadcrumbList className="sm:gap-1.5">
+                    <BreadcrumbItem>
+                      <motion.div
+                        whileHover={{ scale: 1.05 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <BreadcrumbLink href="#">Playground</BreadcrumbLink>
+                      </motion.div>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                      <BreadcrumbPage>Chat</BreadcrumbPage>
+                    </BreadcrumbItem>
+                  </BreadcrumbList>
+                </Breadcrumb>
+              </PanelHeader>
+              <div className="flex-1  lg:p-3">
                 <Outlet />
+                <Chat />
               </div>
             </motion.div>
           )}
@@ -125,62 +165,71 @@ export default function Projects() {
 
         {/* --- Handle Section --- */}
         {/* Show EITHER the main handle OR the indicator handle based on collapsed state */}
-        {isFirstPanelCollapsed ? (
-          <ResizableHandle className="indicator-handle group left">
-            <ChevronRight className="indicator-icon" />
-          </ResizableHandle>
-        ) : isSecondPanelCollapsed ? (
-          <ResizableHandle className="indicator-handle group right">
-            <ChevronLeft className="indicator-icon" />
-          </ResizableHandle>
-        ) : (
-          <ResizableHandle
-            onDoubleClick={resetLayout}
-            className="main-handle group"
-          />
+
+        {!isMobile && (
+          <>
+            {isFirstPanelCollapsed ? (
+              <ResizableHandle className="indicator-handle group left">
+                <ChevronRight className="indicator-icon" />
+              </ResizableHandle>
+            ) : isSecondPanelCollapsed ? (
+              <ResizableHandle className="indicator-handle group right">
+                <ChevronLeft className="indicator-icon" />
+              </ResizableHandle>
+            ) : (
+              <ResizableHandle
+                onDoubleClick={resetLayout}
+                className="main-handle group"
+              />
+            )}
+          </>
         )}
 
         {/* --- Second Panel --- */}
-        <ResizablePanel
-          ref={secondPanelRef}
-          order={2}
-          defaultSize={DEFAULT_LAYOUT[1]}
-          minSize={MIN_PANEL_SIZE_DRAG}
-          collapsible={true}
-          collapsedSize={COLLAPSED_SIZE}
-          className="flex flex-col !overflow-auto" // Panel manages scroll
-          // style={{ display: isSecondPanelCollapsed ? 'none' : 'flex' }} // Alternative way to hide
-        >
-          {!isSecondPanelCollapsed && ( // Only render content if not collapsed
-            <motion.div
-              key="panel2-content" // Add key
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
-              className="flex flex-col h-full"
-            >
-              <PanelHeader title="Column Two">
-                {!isDefaultLayout && (
-                  <HeaderButton
-                    tooltip="Reset Layout (Ctrl+R)"
-                    onClick={resetLayout}
-                    aria-label="Reset column layout"
-                  >
-                    <Columns2Icon className="h-4 w-4" />
-                  </HeaderButton>
-                )}
-              </PanelHeader>
-              <div className="flex-1 p-4 lg:p-5">
-                <div className="text-sm text-gray-600 dark:text-gray-400 space-y-3">
-                  <p>This is the second column area.</p>
-                  <p>Drag handle or use Ctrl/Cmd + ←/→</p>
-                  <p>Layout: [{layout.map((s) => s.toFixed(0)).join(', ')}]</p>
+        {!isMobile && (
+          <ResizablePanel
+            ref={secondPanelRef}
+            order={2}
+            defaultSize={DEFAULT_LAYOUT[1]}
+            minSize={MIN_PANEL_SIZE_DRAG}
+            collapsible={true}
+            collapsedSize={COLLAPSED_SIZE}
+            className="flex flex-col !overflow-auto" // Panel manages scroll
+            // style={{ display: isSecondPanelCollapsed ? 'none' : 'flex' }} // Alternative way to hide
+          >
+            {!isSecondPanelCollapsed && ( // Only render content if not collapsed
+              <motion.div
+                key="panel2-content" // Add key
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                className="flex flex-col h-full"
+              >
+                <PanelHeader title="Column Two">
+                  {!isDefaultLayout && (
+                    <HeaderButton
+                      tooltip="Reset Layout (Ctrl+R)"
+                      onClick={resetLayout}
+                      aria-label="Reset column layout"
+                    >
+                      <Columns2Icon className="h-4 w-4" />
+                    </HeaderButton>
+                  )}
+                </PanelHeader>
+                <div className="flex-1 p-4 lg:p-5">
+                  <div className="text-sm text-gray-600 dark:text-gray-400 space-y-3">
+                    <p>This is the second column area.</p>
+                    <p>Drag handle or use Ctrl/Cmd + ←/→</p>
+                    <p>
+                      Layout: [{layout.map((s) => s.toFixed(0)).join(', ')}]
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </motion.div>
-          )}
-        </ResizablePanel>
+              </motion.div>
+            )}
+          </ResizablePanel>
+        )}
       </ResizablePanelGroup>
     </div>
   );
@@ -193,10 +242,10 @@ interface PanelHeaderProps {
 }
 const PanelHeader: React.FC<PanelHeaderProps> = ({ title, children }) => (
   <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200/60 dark:border-gray-800/60 sticky top-0 bg-background/80 dark:bg-background/90 backdrop-blur-sm z-10">
+    <div className="flex items-center  space-x-1 min-h-[28px]">{children}</div>
     <span className="font-medium text-sm text-gray-700 dark:text-gray-300">
       {title}
     </span>
-    <div className="flex items-center space-x-1 min-h-[28px]">{children}</div>
   </div>
 );
 

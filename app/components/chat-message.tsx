@@ -29,7 +29,9 @@ export function ChatMessage({ isUser, children }: ChatMessageProps) {
       <img
         className={cn(
           'rounded-full',
-          isUser ? 'order-1' : 'border border-black/[0.08] shadow-sm'
+          isUser
+            ? 'order-1 border border-blue-500'
+            : 'border border-purple-500/50 shadow-sm'
         )}
         src={
           isUser
@@ -41,13 +43,17 @@ export function ChatMessage({ isUser, children }: ChatMessageProps) {
         height={40}
       />
       <div
-        className={cn(isUser ? 'bg-muted px-4 py-3 rounded-xl' : 'space-y-4')}
+        className={cn(
+          isUser
+            ? 'bg-blue-300/20 px-4 py-3 rounded-xl'
+            : 'space-y-4 bg-gray-200/20 px-4 py-3 rounded-xl w-full'
+        )}
       >
         <div className="flex flex-col gap-3">
           <p className="sr-only">{isUser ? 'You' : 'Bart'} said:</p>
           {children}
         </div>
-        {!isUser && <MessageActions />}
+        {/* {!isUser && <MessageActions />} */}
       </div>
     </article>
   );

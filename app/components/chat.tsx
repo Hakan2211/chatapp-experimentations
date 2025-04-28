@@ -1,86 +1,201 @@
-import { SettingsPanelTrigger } from '#/components/settings-panel';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '#/components/breadcrumb';
 import { Button } from '#/components/button';
 import { ScrollArea } from '#/components/scroll-area';
 import {
-  RiCodeSSlashLine,
-  RiShareLine,
-  RiShareCircleLine,
   RiShining2Line,
   RiAttachment2,
+  RiCpuLine,
+  RiArrowUpLine,
   RiMicLine,
-  RiLeafLine,
 } from '@remixicon/react';
 import { ChatMessage } from '#/components/chat-message';
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
+import { cn } from '#/lib/utils';
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '#/components/dropdown-menu';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '#/components/tooltip';
+
+import TextareaAutosize from 'react-textarea-autosize';
+import { motion } from 'framer-motion';
+import { Users } from 'lucide-react';
+import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group';
+import { User } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from './avatar';
+import { Separator } from '#/components/separator';
+
+const groupUsers = [
+  {
+    id: 'u1',
+    name: 'Alex',
+    src: 'https://res.cloudinary.com/dlzlfasou/image/upload/v1741345634/user-02_mlqqqt.png',
+  }, // Replace with actual paths or data
+  { id: 'u2', name: 'Sam', src: 'https://avatar.iran.liara.run/public/48' },
+  { id: 'u3', name: 'User 3', src: 'https://avatar.iran.liara.run/public/10' }, // Example with fallback
+];
 
 export default function Chat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [input, setInput] = useState('');
+  const [currentModel, setCurrentModel] = useState('GPT-4 Omni');
+  const models = ['GPT-4 Omni', 'Claude 3 Opus', 'Llama 3 70B', 'Gemini Pro'];
+  const [chatMode, setChatMode] = useState<'solo' | 'group'>('solo');
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView();
   }, []);
 
+  const handleSend = () => {
+    if (!input.trim()) return;
+    console.log(`Sending message with model ${currentModel}:`, input);
+    setInput('');
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      handleSend();
+    }
+  };
+
   return (
-    <ScrollArea className="flex-1 [&>div>div]:h-full w-full shadow-md md:rounded-s-[inherit] min-[1024px]:rounded-e-3xl bg-background">
-      <div className="h-full flex flex-col px-4 md:px-6 lg:px-8">
-        {/* Header */}
-        <div className="py-5 bg-background sticky top-0 z-10 before:absolute before:inset-x-0 before:bottom-0 before:h-px before:bg-gradient-to-r before:from-black/[0.06] before:via-black/10 before:to-black/[0.06]">
-          <div className="flex items-center justify-between gap-2">
-            <Breadcrumb>
-              <BreadcrumbList className="sm:gap-1.5">
-                <BreadcrumbItem>
-                  <BreadcrumbLink href="#">Playground</BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Chat</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-            <div className="flex items-center gap-1 -my-2 -me-2">
-              <Button variant="ghost" className="px-2">
-                <RiCodeSSlashLine
-                  className="text-muted-foreground sm:text-muted-foreground/70 size-5"
-                  size={20}
-                  aria-hidden="true"
-                />
-                <span className="max-sm:sr-only">Code</span>
-              </Button>
-              <Button variant="ghost" className="px-2">
-                <RiShareLine
-                  className="text-muted-foreground sm:text-muted-foreground/70 size-5"
-                  size={20}
-                  aria-hidden="true"
-                />
-                <span className="max-sm:sr-only">Share</span>
-              </Button>
-              <Button variant="ghost" className="px-2">
-                <RiShareCircleLine
-                  className="text-muted-foreground sm:text-muted-foreground/70 size-5"
-                  size={20}
-                  aria-hidden="true"
-                />
-                <span className="max-sm:sr-only">Export</span>
-              </Button>
-              <SettingsPanelTrigger />
-            </div>
+    <div className="flex flex-col h-full shadow-md md:rounded-s-[inherit] bg-gradient-to-t from-white to-blue-50/30 dark:from-gray-900 dark:to-gray-800 min-[1024px]:rounded-e-3xl">
+      {/* Header */}
+      <div className=" py-5 backdrop-blur-md bg-white/10 dark:bg-black/10 sticky top-0 z-10 before:absolute before:inset-x-0 before:bottom-0 before:h-px before:bg-gradient-to-r before:from-blue-500/20 before:via-purple-500/20 before:to-blue-500/20">
+        {/* Header content */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-3">
+            <ToggleGroup
+              type="single"
+              value={chatMode}
+              onValueChange={(val) => {
+                if (val) setChatMode(val as 'solo' | 'group');
+              }}
+              className=" flex rounded-lg border p-1"
+            >
+              <ToggleGroupItem
+                value="solo"
+                aria-label="Solo"
+                className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 hover:bg-muted/50 data-[state=on]:bg-gradient-to-r data-[state=on]:from-pink-500/10 data-[state=on]:to-purple-500/10 data-[state=on]:text-foreground data-[state=on]:shadow-sm data-[state=on]:ring-1 data-[state=on]:ring-pink-500/20"
+              >
+                <User className="h-4 w-4" />
+                Solo
+              </ToggleGroupItem>
+
+              <div className=" w-[2px] h-6 bg-gradient-to-b from-sky-600/20 via-purple-600/20 to-red-600/20 self-center mx-2 " />
+
+              <ToggleGroupItem
+                value="group"
+                aria-label="Group"
+                className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 hover:bg-muted/50 data-[state=on]:bg-gradient-to-r data-[state=on]:from-purple-500/10 data-[state=on]:to-blue-500/10 data-[state=on]:text-foreground data-[state=on]:shadow-sm data-[state=on]:ring-1 data-[state=on]:ring-blue-500/20"
+              >
+                <Users className="h-4 w-4" />
+                Group
+              </ToggleGroupItem>
+            </ToggleGroup>
+            {/* Conditional Avatar Stack */}
+            {chatMode === 'group' && (
+              <div className="flex items-center -space-x-2">
+                {groupUsers.slice(0, 3).map(
+                  (
+                    user // Show max 3 avatars + overflow
+                  ) => (
+                    <Avatar
+                      key={user.id}
+                      className="h-8 w-8 border-2 border-background"
+                    >
+                      <AvatarImage
+                        src={user.src ?? undefined}
+                        alt={user.name}
+                      />
+                      <AvatarFallback className="text-xs">
+                        {user.name?.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  )
+                )}
+                {groupUsers.length > 3 && (
+                  <Avatar className="h-8 w-8 border-2 border-background">
+                    <AvatarFallback className="text-xs">
+                      +{groupUsers.length - 3}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+              </div>
+            )}
+            {/* You might add SettingsPanelTrigger back here if needed */}
           </div>
+          {/* ... Breadcrumb ... */}
+          {/* <Breadcrumb>
+            <BreadcrumbList className="sm:gap-1.5">
+              <BreadcrumbItem>
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <BreadcrumbLink href="#">Playground</BreadcrumbLink>
+                </motion.div>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>Chat</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb> */}
+          {/* ... Header Buttons ... */}
+          {/* <div className="flex items-center gap-1 -my-2 -me-2">
+            <Button variant="ghost" className="px-2">
+              <RiCodeSSlashLine
+                className="text-muted-foreground sm:text-muted-foreground/70 size-5"
+                size={20}
+                aria-hidden="true"
+              />
+              <span className="max-sm:sr-only">Code</span>
+            </Button>
+            <Button variant="ghost" className="px-2">
+              <RiShareLine
+                className="text-muted-foreground sm:text-muted-foreground/70 size-5"
+                size={20}
+                aria-hidden="true"
+              />
+              <span className="max-sm:sr-only">Share</span>
+            </Button>
+            <Button variant="ghost" className="px-2">
+              <RiShareCircleLine
+                className="text-muted-foreground sm:text-muted-foreground/70 size-5"
+                size={20}
+                aria-hidden="true"
+              />
+              <span className="max-sm:sr-only">Export</span>
+            </Button>
+            <SettingsPanelTrigger />
+          </div> */}
+        </div>
+      </div>
+      <ScrollArea className="p-2 flex-1 w-full">
+        <div className="h-full flex flex-col px-4 md:px-6 lg:px-8">
+          {/* Chat */}
         </div>
         {/* Chat */}
         <div className="relative grow">
+          {/* Chat message content */}
           <div className="max-w-3xl mx-auto mt-6 space-y-6">
+            {/* ... Messages ... */}
             <div className="text-center my-8">
-              <div className="inline-flex items-center bg-white rounded-full border border-black/[0.08] shadow-xs text-xs font-medium py-1 px-3 text-foreground/80">
+              <div className="inline-flex items-center gap-1.5 bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm rounded-full border border-blue-400/50 dark:border-blue-500/50 shadow-sm text-xs font-medium py-1.5 px-3.5 text-foreground/90 dark:text-foreground/80 transition-all hover:border-blue-500/70 dark:hover:border-blue-600/70">
                 <RiShining2Line
-                  className="me-1.5 text-muted-foreground/70 -ms-1"
+                  className="text-blue-500/80 dark:text-blue-400/80 -ms-0.5"
                   size={14}
                   aria-hidden="true"
                 />
@@ -88,124 +203,222 @@ export default function Chat() {
               </div>
             </div>
             <ChatMessage isUser>
-              <p>Hey Bolt, can you tell me more about AI Agents?</p>
+              <p>Hey Ebru, what's up?</p>
+            </ChatMessage>
+            <ChatMessage>
+              <p>I'm good, thanks! How about you?</p>
+              <p>I am eating well and I had a great workout yesterday.</p>
+            </ChatMessage>
+            <ChatMessage isUser>
+              <p>
+                I'm glad to hear that! I'm working on a new project at work.
+              </p>
+              <p>
+                I'm also thinking about getting a new laptop. What do you think?
+              </p>
+            </ChatMessage>
+            <ChatMessage isUser>
+              <p>Sounds like you're busy! I'm just checking in.</p>
+            </ChatMessage>
+            <ChatMessage isUser>
+              <p>Anything planned for the weekend?</p>
             </ChatMessage>
             <ChatMessage>
               <p>
-                AI agents are software that perceive their environment and act
-                autonomously to achieve goals, making decisions, learning, and
-                interacting. For example, an AI agent might schedule meetings by
-                resolving conflicts, contacting participants, and finding
-                optimal times—all without constant supervision.
+                I'm thinking of going to the gym and then maybe grabbing a
+                coffee with Funda.
               </p>
-              <p>Let me know if you&lsquo;d like more details!</p>
+              <p>Or maybe a tea with her.</p>
             </ChatMessage>
             <ChatMessage isUser>
-              <p>All clear, thank you!</p>
+              <p>Sounds like a plan! I'm sure you'll have a great time.</p>
             </ChatMessage>
+            <ChatMessage isUser>
+              <p>What about you?</p>
+            </ChatMessage>
+            <ChatMessage>
+              <p>I will read a book and maybe go for a walk.</p>
+              <p>Or just watch a movie.</p>
+            </ChatMessage>
+            <ChatMessage>
+              <p>Which film?</p>
+              <p>I'm thinking of watching The Dark Knight.</p>
+            </ChatMessage>
+            <ChatMessage isUser>
+              <p>I'm sure you'll enjoy it.</p>
+            </ChatMessage>
+            <ChatMessage isUser>
+              <p>Have you heard something about Filiz?</p>
+            </ChatMessage>
+            <ChatMessage>
+              <p>No, I haven't. What's up?</p>
+            </ChatMessage>
+            <ChatMessage isUser>
+              <p>I'm not sure. I'm just curious.</p>
+            </ChatMessage>
+            <ChatMessage isUser>
+              <p>Oh, no problem.</p>
+            </ChatMessage>
+
             <div ref={messagesEndRef} aria-hidden="true" />
           </div>
-        </div>
-        {/* Footer */}
-        <div className="sticky bottom-0 pt-4 md:pt-8 z-50">
-          <div className="max-w-3xl mx-auto bg-background rounded-[20px] pb-4 md:pb-8">
-            <div className="relative rounded-[20px] border border-transparent bg-muted transition-colors focus-within:bg-muted/50 focus-within:border-input has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50 [&:has(input:is(:disabled))_*]:pointer-events-none">
-              <textarea
-                className="flex sm:min-h-[84px] w-full bg-transparent px-4 py-3 text-[15px] leading-relaxed text-foreground placeholder:text-muted-foreground/70 focus-visible:outline-none [resize:none]"
-                placeholder="Ask me anything..."
-                aria-label="Enter your prompt"
-              />
-              {/* Textarea buttons */}
-              <div className="flex items-center justify-between gap-2 p-3">
-                {/* Left buttons */}
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="rounded-full size-8 border-none hover:bg-background hover:shadow-md transition-[box-shadow]"
-                  >
-                    <RiAttachment2
-                      className="text-muted-foreground/70 size-5"
-                      size={20}
-                      aria-hidden="true"
-                    />
-                    <span className="sr-only">Attach</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="rounded-full size-8 border-none hover:bg-background hover:shadow-md transition-[box-shadow]"
-                  >
-                    <RiMicLine
-                      className="text-muted-foreground/70 size-5"
-                      size={20}
-                      aria-hidden="true"
-                    />
-                    <span className="sr-only">Audio</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="rounded-full size-8 border-none hover:bg-background hover:shadow-md transition-[box-shadow]"
-                  >
-                    <RiLeafLine
-                      className="text-muted-foreground/70 size-5"
-                      size={20}
-                      aria-hidden="true"
-                    />
-                    <span className="sr-only">Action</span>
-                  </Button>
-                </div>
-                {/* Right buttons */}
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="rounded-full size-8 border-none hover:bg-background hover:shadow-md transition-[box-shadow]"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      fill="none"
+        </div>{' '}
+      </ScrollArea>{' '}
+      {/* Footer */}
+      <div className=" p-2 sticky bottom-0 pt-4 md:pt-8 z-50">
+        <div className="max-w-3xl mx-auto bg-background rounded-[20px] pb-4 md:pb-8">
+          <div className="relative rounded-[20px] backdrop-blur-md bg-gradient-to-b from-background to-blue-500/5 bg-white/10 dark:bg-black/10 border border-white/20 focus-within:ring-2 focus-within:ring-blue-500/50 transition-all">
+            <TextareaAutosize
+              // Removed fixed height class like sm:min-h-[84px]
+              className="flex w-full resize-none border-0 bg-transparent px-4 py-3 text-[15px] leading-relaxed text-foreground placeholder:text-muted-foreground/70 focus:ring-0 focus-visible:outline-none disabled:cursor-not-allowed" // Keep other styles, ensure resize-none is present
+              placeholder="Ask me anything... (Shift+Enter for newline)" // Updated placeholder
+              aria-label="Enter your prompt"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              minRows={1} // Minimum height of 1 row
+              maxRows={6} // Maximum height of 6 rows before scrolling starts *within* the textarea
+              // Add any other textarea props you need
+            />
+            {/* Textarea buttons */}
+            <div className="flex items-center justify-between gap-2 p-3">
+              {/* Left buttons */}
+              <div className="flex items-center gap-1">
+                <TooltipProvider delayDuration={100}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="rounded-full size-8 border-none bg-gradient-to-br from-blue-500/20 to-purple-500/20 hover:shadow-[0_0_10px_rgba(59,130,246,0.5)] transition-all"
+                        aria-label="Attach file"
+                      >
+                        <RiAttachment2
+                          className="text-muted-foreground size-5"
+                          size={20}
+                          aria-hidden="true"
+                        />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" align="center">
+                      <p>Attach File</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider delayDuration={100}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="rounded-full size-8 border-none bg-gradient-to-br from-blue-500/20 to-purple-500/20 hover:shadow-[0_0_10px_rgba(59,130,246,0.5)]"
+                        aria-label="Audio"
+                      >
+                        <RiMicLine
+                          className="text-muted-foreground size-5"
+                          size={20}
+                          aria-hidden="true"
+                        />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" align="center">
+                      <p>RecordAudio</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider delayDuration={100}>
+                  <DropdownMenu>
+                    {/* Wrap the actual button in TooltipTrigger AND DropdownMenuTrigger */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            className="flex items-center rounded-full h-8 px-3 bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-white/20 text-muted-foreground hover:shadow-[0_0_10px_rgba(59,130,246,0.5)] transition-all text-sm font-medium"
+                            aria-label={`Current model: ${currentModel}. Click to change.`}
+                          >
+                            <RiCpuLine
+                              className="size-4 mr-1.5 flex-shrink-0 text-blue-400"
+                              aria-hidden="true"
+                            />
+                            <span className="truncate max-w-[100px] sm:max-w-[150px]">
+                              {currentModel}
+                            </span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" align="center">
+                        <p>Select Model</p>
+                      </TooltipContent>
+                    </Tooltip>
+
+                    <DropdownMenuContent
+                      className="w-64 backdrop-blur-md bg-white/10 dark:bg-black/10 border border-white/20 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.2)]"
+                      align="end"
+                      side="top"
                     >
-                      <g clipPath="url(#icon-a)">
-                        <path
-                          fill="url(#icon-b)"
-                          d="m8 .333 2.667 5 5 2.667-5 2.667-2.667 5-2.667-5L.333 8l5-2.667L8 .333Z"
-                        />
-                        <path
-                          stroke="#451A03"
-                          strokeOpacity=".04"
-                          d="m8 1.396 2.225 4.173.072.134.134.071L14.604 8l-4.173 2.226-.134.071-.072.134L8 14.604l-2.226-4.173-.071-.134-.134-.072L1.396 8l4.173-2.226.134-.071.071-.134L8 1.396Z"
-                        />
-                      </g>
-                      <defs>
-                        <linearGradient
-                          id="icon-b"
-                          x1="8"
-                          x2="8"
-                          y1=".333"
-                          y2="15.667"
-                          gradientUnits="userSpaceOnUse"
-                        >
-                          <stop stopColor="#FDE68A" />
-                          <stop offset="1" stopColor="#F59E0B" />
-                        </linearGradient>
-                        <clipPath id="icon-a">
-                          <path fill="#fff" d="M0 0h16v16H0z" />
-                        </clipPath>
-                      </defs>
-                    </svg>
-                    <span className="sr-only">Generate</span>
-                  </Button>
-                  <Button className="rounded-full h-8">Ask Bart</Button>
-                </div>
+                      <DropdownMenuLabel className="text-muted-foreground">
+                        Select Model
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuRadioGroup
+                        value={currentModel}
+                        onValueChange={setCurrentModel}
+                      >
+                        {models.map((model) => (
+                          <DropdownMenuRadioItem
+                            className="text-muted-foreground hover:bg-blue-500/20 focus:bg-blue-500/30 flex justify-between items-center"
+                            key={model}
+                            value={model}
+                          >
+                            <span>{model}</span>
+                            <span className="text-xs opacity-70">
+                              {model === 'GPT-4 Omni'
+                                ? 'Advanced reasoning'
+                                : model === 'Claude 3 Opus'
+                                ? 'Creative writing'
+                                : model === 'Llama 3 70B'
+                                ? 'Open-source power'
+                                : 'Fast responses'}
+                            </span>
+                          </DropdownMenuRadioItem>
+                        ))}
+                      </DropdownMenuRadioGroup>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TooltipProvider>
+              </div>
+
+              {/* Right buttons */}
+              <div className="flex items-center gap-2">
+                {/* Model Switcher using DropdownMenu */}
+
+                {/* Send Button */}
+                <TooltipProvider delayDuration={100}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="icon"
+                        className={cn(
+                          'flex-shrink-0 rounded-full size-8 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-gray-200 disabled:opacity-50'
+                        )}
+                        disabled={!input.trim()}
+                        onClick={handleSend}
+                        aria-label="Send message"
+                      >
+                        <RiArrowUpLine size={18} aria-hidden="true" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" align="center">
+                      <p>Send Message</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </ScrollArea>
+    </div>
   );
 }
