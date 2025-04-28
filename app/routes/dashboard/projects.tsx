@@ -1,14 +1,12 @@
 import { TooltipContent, TooltipTrigger } from '@radix-ui/react-tooltip';
-
 import { Button } from '#/components/button';
 import { Tooltip } from '@radix-ui/react-tooltip';
 import { ResizableHandle, ResizablePanel } from '#/components/ui/resizable';
 import { ResizablePanelGroup } from '#/components/ui/resizable';
-import { Outlet } from 'react-router';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router';
 import { ChevronRight, ChevronLeft, Columns2Icon } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useCallback } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type {
   ImperativePanelHandle,
   PanelGroupOnLayout,
@@ -16,7 +14,6 @@ import type {
 import type { ImperativePanelGroupHandle } from 'react-resizable-panels';
 import { useIsMobile } from '#/hooks/use-mobile';
 import Chat from '#/components/chat';
-import { ChatMessage } from '#/components/chat-message';
 import {
   Breadcrumb,
   BreadcrumbPage,
@@ -25,33 +22,49 @@ import {
   BreadcrumbItem,
   BreadcrumbList,
 } from '#/components/breadcrumb';
+import { cn } from '#/lib/utils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs';
 
 const DEFAULT_LAYOUT = [67, 33];
 const COLLAPSED_SIZE = 0;
-const MIN_PANEL_SIZE_DRAG = 5; // Minimum size before collapse triggers
-const COLLAPSE_THRESHOLD = 1; // Consider a panel collapsed if its size is less than this
+const MIN_PANEL_SIZE_DRAG = 5;
+const COLLAPSE_THRESHOLD = 1;
 
 export default function Projects() {
   const panelGroupRef = useRef<ImperativePanelGroupHandle>(null);
   const firstPanelRef = useRef<ImperativePanelHandle>(null);
   const secondPanelRef = useRef<ImperativePanelHandle>(null);
   const isMobile = useIsMobile();
-
+  const location = useLocation();
+  const navigate = useNavigate();
   const [layout, setLayout] = useState<number[]>(DEFAULT_LAYOUT);
 
-  // Update layout state when panels are resized
+  // Determine active tab based on route
+  const getActiveTab = () => {
+    const path = location.pathname.split('/').pop();
+    if (path === 'editor' || path === 'summary' || path === 'notes') {
+      return path;
+    }
+    return 'chat';
+  };
+
+  const [activeTab, setActiveTab] = useState<string>(getActiveTab());
+
+  // Sync active tab with route changes
+  useEffect(() => {
+    setActiveTab(getActiveTab());
+  }, [location.pathname]);
+
   const handleLayout: PanelGroupOnLayout = (sizes: number[]) => {
     setLayout(sizes);
   };
 
-  // Reset layout to default
   const resetLayout = useCallback(() => {
     firstPanelRef.current?.expand();
     secondPanelRef.current?.expand();
     panelGroupRef.current?.setLayout(DEFAULT_LAYOUT);
-  }, []); // Refs don't need to be dependencies
+  }, []);
 
-  // Derived states
   const isDefaultLayout =
     layout.length === 2 &&
     Math.abs(layout[0] - DEFAULT_LAYOUT[0]) < 1 &&
@@ -60,26 +73,25 @@ export default function Projects() {
   const isFirstPanelCollapsed = layout[0] < COLLAPSE_THRESHOLD;
   const isSecondPanelCollapsed = layout[1] < COLLAPSE_THRESHOLD;
 
-  // --- Keyboard Shortcuts ---
   useEffect(() => {
     if (!isMobile) {
       const handleKeyDown = (event: KeyboardEvent) => {
         if (event.ctrlKey || event.metaKey) {
           let handled = false;
           switch (event.key.toLowerCase()) {
-            case 'arrowleft': // Collapse Right Panel
+            case 'arrowleft':
               if (secondPanelRef.current && !isSecondPanelCollapsed) {
                 secondPanelRef.current.collapse();
                 handled = true;
               }
               break;
-            case 'arrowright': // Collapse Left Panel
+            case 'arrowright':
               if (firstPanelRef.current && !isFirstPanelCollapsed) {
                 firstPanelRef.current.collapse();
                 handled = true;
               }
               break;
-            case 'r': // Reset
+            case 'r':
               resetLayout();
               handled = true;
               break;
@@ -97,75 +109,153 @@ export default function Projects() {
     layout,
     isFirstPanelCollapsed,
     isSecondPanelCollapsed,
-  ]); // Dependencies updated
+  ]);
 
-  // --- Framer Motion Variants ---
-  const panelVariants = {
-    visible: { opacity: 1, transition: { duration: 0.2, ease: 'easeOut' } },
-    hidden: { opacity: 0.4, transition: { duration: 0.2, ease: 'easeOut' } },
+  // Handle tab change and navigate to corresponding route
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    if (value === 'chat') {
+      navigate(''); // Navigate to base path for Chat
+    } else {
+      navigate(value); // Navigate to editor, summary, or notes
+    }
   };
 
   return (
     <div className="flex flex-1 h-full w-full">
-      {/* Ensure PanelGroup allows overflow for indicators/handles */}
       <ResizablePanelGroup
         ref={panelGroupRef}
         direction="horizontal"
-        className="relative flex-1 rounded-lg border border-gray-200/80  dark:border-gray-800/80 bg-background dark:bg-background"
+        className="relative flex-1 rounded-lg border border-gray-200/80 dark:border-gray-800/80 bg-background dark:bg-background"
         onLayout={handleLayout}
-        autoSaveId="dashboard-layout" // Persist layout
+        autoSaveId="dashboard-layout"
       >
         {/* --- First Panel --- */}
         <ResizablePanel
           ref={firstPanelRef}
           order={1}
-          defaultSize={DEFAULT_LAYOUT[0]}
+          defaultSize={isMobile ? 100 : DEFAULT_LAYOUT[0]}
           minSize={MIN_PANEL_SIZE_DRAG}
           collapsible={true}
           collapsedSize={COLLAPSED_SIZE}
-          className="flex flex-col !overflow-auto" // Panel manages scroll
-          // Render null instead of the panel content if collapsed to prevent flash/reflow issues
-          // Or use the motion.div approach if preferred
-          // style={{ display: isFirstPanelCollapsed ? 'none' : 'flex' }} // Alternative way to hide
+          className="flex flex-col !overflow-auto"
         >
-          {!isFirstPanelCollapsed && ( // Only render content if not collapsed
+          {!isFirstPanelCollapsed && (
             <motion.div
-              key="panel1-content" // Add key for mount/unmount animation
+              key="panel1-content"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }} // Faster fade for content
+              transition={{ duration: 0.15 }}
               className="flex flex-col h-full"
             >
-              <PanelHeader title="">
-                <Breadcrumb>
-                  <BreadcrumbList className="sm:gap-1.5">
-                    <BreadcrumbItem>
-                      <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <BreadcrumbLink href="#">Playground</BreadcrumbLink>
-                      </motion.div>
-                    </BreadcrumbItem>
-                    <BreadcrumbSeparator />
-                    <BreadcrumbItem>
-                      <BreadcrumbPage>Chat</BreadcrumbPage>
-                    </BreadcrumbItem>
-                  </BreadcrumbList>
-                </Breadcrumb>
+              <PanelHeader>
+                {!isMobile && (
+                  <PanelHeader.Actions>
+                    <Breadcrumb>
+                      <BreadcrumbList className="sm:gap-1.5">
+                        <BreadcrumbItem>
+                          <motion.div
+                            whileHover={{ scale: 1.05 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            <BreadcrumbLink href="#">Playground</BreadcrumbLink>
+                          </motion.div>
+                        </BreadcrumbItem>
+                        <BreadcrumbSeparator />
+                        <BreadcrumbItem>
+                          <BreadcrumbPage>Chat</BreadcrumbPage>
+                        </BreadcrumbItem>
+                      </BreadcrumbList>
+                    </Breadcrumb>
+                  </PanelHeader.Actions>
+                )}
+                <PanelHeader.Title></PanelHeader.Title>
               </PanelHeader>
-              <div className="flex-1  lg:p-3">
-                <Outlet />
-                <Chat />
+              <div className="flex-1 lg:p-3 flex flex-col">
+                {isMobile ? (
+                  <Tabs
+                    value={activeTab}
+                    onValueChange={handleTabChange}
+                    className="h-full flex flex-col"
+                  >
+                    <TabsList
+                      className={cn(
+                        'grid grid-cols-4 w-full h-8 bg-gray-100/50 dark:bg-gray-900/70 backdrop-blur-sm border border-white/30 dark:border-gray-700/30 rounded-lg p-1',
+                        'mb-2'
+                      )}
+                    >
+                      <TabsTrigger
+                        value="chat"
+                        className={cn(
+                          'h-6 text-xs font-medium tracking-wide',
+                          'data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500/10 data-[state=active]:to-purple-500/10',
+                          'data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:ring-1 data-[state=active]:ring-blue-500/20',
+                          'text-gray-900 dark:text-gray-200 hover:bg-white/30 dark:hover:bg-gray-700/30 hover:shadow-[0_0_10px_rgba(59,130,246,0.5)] hover:scale-105',
+                          'transition-all duration-200 ease-out'
+                        )}
+                      >
+                        Chat
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="editor"
+                        className={cn(
+                          'h-6 text-xs font-medium tracking-wide',
+                          'data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500/10 data-[state=active]:to-purple-500/10',
+                          'data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:ring-1 data-[state=active]:ring-blue-500/20',
+                          'text-gray-900 dark:text-gray-200 hover:bg-white/30 dark:hover:bg-gray-700/30 hover:shadow-[0_0_10px_rgba(59,130,246,0.5)] hover:scale-105',
+                          'transition-all duration-200 ease-out'
+                        )}
+                      >
+                        Editor
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="summary"
+                        className={cn(
+                          'h-6 text-xs font-medium tracking-wide',
+                          'data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500/10 data-[state=active]:to-purple-500/10',
+                          'data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:ring-1 data-[state=active]:ring-blue-500/20',
+                          'text-gray-900 dark:text-gray-200 hover:bg-white/30 dark:hover:bg-gray-700/30 hover:shadow-[0_0_10px_rgba(59,130,246,0.5)] hover:scale-105',
+                          'transition-all duration-200 ease-out'
+                        )}
+                      >
+                        Summary
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="notes"
+                        className={cn(
+                          'h-6 text-xs font-medium tracking-wide',
+                          'data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500/10 data-[state=active]:to-purple-500/10',
+                          'data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:ring-1 data-[state=active]:ring-blue-500/20',
+                          'text-gray-900 dark:text-gray-200 hover:bg-white/30 dark:hover:bg-gray-700/30 hover:shadow-[0_0_10px_rgba(59,130,246,0.5)] hover:scale-105',
+                          'transition-all duration-200 ease-out'
+                        )}
+                      >
+                        Notes
+                      </TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="chat" className="flex-1 m-0">
+                      <Chat />
+                    </TabsContent>
+                    <TabsContent value="editor" className="flex-1 m-0">
+                      <Outlet />
+                    </TabsContent>
+                    <TabsContent value="summary" className="flex-1 m-0">
+                      <Outlet />
+                    </TabsContent>
+                    <TabsContent value="notes" className="flex-1 m-0">
+                      <Outlet />
+                    </TabsContent>
+                  </Tabs>
+                ) : (
+                  <Chat />
+                )}
               </div>
             </motion.div>
           )}
         </ResizablePanel>
 
         {/* --- Handle Section --- */}
-        {/* Show EITHER the main handle OR the indicator handle based on collapsed state */}
-
         {!isMobile && (
           <>
             {isFirstPanelCollapsed ? (
@@ -194,37 +284,94 @@ export default function Projects() {
             minSize={MIN_PANEL_SIZE_DRAG}
             collapsible={true}
             collapsedSize={COLLAPSED_SIZE}
-            className="flex flex-col !overflow-auto" // Panel manages scroll
-            // style={{ display: isSecondPanelCollapsed ? 'none' : 'flex' }} // Alternative way to hide
+            className="flex flex-col !overflow-auto"
           >
-            {!isSecondPanelCollapsed && ( // Only render content if not collapsed
+            {!isSecondPanelCollapsed && (
               <motion.div
-                key="panel2-content" // Add key
+                key="panel2-content"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.15 }}
                 className="flex flex-col h-full"
               >
-                <PanelHeader title="Column Two">
-                  {!isDefaultLayout && (
-                    <HeaderButton
-                      tooltip="Reset Layout (Ctrl+R)"
-                      onClick={resetLayout}
-                      aria-label="Reset column layout"
+                <PanelHeader>
+                  <PanelHeader.Actions>
+                    <nav
+                      className={cn(
+                        'inline-flex h-10 gap-2 w-fit items-center justify-center rounded-xl p-1',
+                        'bg-gray-100/50 dark:bg-gray-900/70',
+                        'backdrop-blur-sm shadow-sm',
+                        'border border-white/30 dark:border-gray-700/30'
+                      )}
                     >
-                      <Columns2Icon className="h-4 w-4" />
-                    </HeaderButton>
-                  )}
+                      <NavLink
+                        to="editor"
+                        className={({ isActive }) =>
+                          cn(
+                            'inline-flex h-8 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5',
+                            'text-sm font-medium tracking-wide whitespace-nowrap',
+                            'transition-all duration-200 ease-out',
+                            isActive
+                              ? 'bg-gradient-to-r from-blue-500/10 to-purple-500/10 text-foreground shadow-sm ring-1 ring-blue-500/20'
+                              : 'text-gray-900 dark:text-gray-200 hover:bg-white/30 dark:hover:bg-gray-700/30 hover:shadow-[0_0_10px_rgba(59,130,246,0.5)] hover:scale-105',
+                            'focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent',
+                            'disabled:pointer-events-none disabled:opacity-50'
+                          )
+                        }
+                      >
+                        Editor
+                      </NavLink>
+                      <NavLink
+                        to="summary"
+                        className={({ isActive }) =>
+                          cn(
+                            'inline-flex h-8 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5',
+                            'text-sm font-medium tracking-wide whitespace-nowrap',
+                            'transition-all duration-200 ease-out',
+                            isActive
+                              ? 'bg-gradient-to-r from-blue-500/10 to-purple-500/10 text-foreground shadow-sm ring-1 ring-blue-500/20'
+                              : 'text-gray-900 dark:text-gray-200 hover:bg-white/30 dark:hover:bg-gray-700/30 hover:shadow-[0_0_10px_rgba(59,130,246,0.5)] hover:scale-105',
+                            'focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent',
+                            'disabled:pointer-events-none disabled:opacity-50'
+                          )
+                        }
+                      >
+                        Summary
+                      </NavLink>
+                      <NavLink
+                        to="notes"
+                        className={({ isActive }) =>
+                          cn(
+                            'inline-flex h-8 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5',
+                            'text-sm font-medium tracking-wide whitespace-nowrap',
+                            'transition-all duration-200 ease-out',
+                            isActive
+                              ? 'bg-gradient-to-r from-blue-500/10 to-purple-500/10 text-foreground shadow-sm ring-1 ring-blue-500/20'
+                              : 'text-gray-900 dark:text-gray-200 hover:bg-white/30 dark:hover:bg-gray-700/30 hover:shadow-[0_0_10px_rgba(59,130,246,0.5)] hover:scale-105',
+                            'focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent',
+                            'disabled:pointer-events-none disabled:opacity-50'
+                          )
+                        }
+                      >
+                        Notes
+                      </NavLink>
+                    </nav>
+                  </PanelHeader.Actions>
+                  <PanelHeader.Actions>
+                    {!isDefaultLayout && (
+                      <HeaderButton
+                        tooltip="Reset Layout (Ctrl+R)"
+                        onClick={resetLayout}
+                        aria-label="Reset column layout"
+                      >
+                        <Columns2Icon className="h-4 w-4" />
+                      </HeaderButton>
+                    )}
+                  </PanelHeader.Actions>
                 </PanelHeader>
                 <div className="flex-1 p-4 lg:p-5">
-                  <div className="text-sm text-gray-600 dark:text-gray-400 space-y-3">
-                    <p>This is the second column area.</p>
-                    <p>Drag handle or use Ctrl/Cmd + ←/→</p>
-                    <p>
-                      Layout: [{layout.map((s) => s.toFixed(0)).join(', ')}]
-                    </p>
-                  </div>
+                  <Outlet />
                 </div>
               </motion.div>
             )}
@@ -235,24 +382,71 @@ export default function Projects() {
   );
 }
 
-// --- Helper Component: PanelHeader ---
-interface PanelHeaderProps {
-  title: string;
-  children?: React.ReactNode;
+// PanelHeader and HeaderButton components
+interface PanelHeaderProps extends React.PropsWithChildren<{}> {
+  className?: string;
 }
-const PanelHeader: React.FC<PanelHeaderProps> = ({ title, children }) => (
-  <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200/60 dark:border-gray-800/60 sticky top-0 bg-background/80 dark:bg-background/90 backdrop-blur-sm z-10">
-    <div className="flex items-center  space-x-1 min-h-[28px]">{children}</div>
-    <span className="font-medium text-sm text-gray-700 dark:text-gray-300">
-      {title}
-    </span>
-  </div>
-);
 
-// --- Helper Component: HeaderButton ---
+interface TitleProps extends React.PropsWithChildren<{}> {
+  className?: string;
+}
+
+interface ActionsProps extends React.PropsWithChildren<{}> {
+  className?: string;
+}
+
+const Title: React.FC<TitleProps> = ({ children, className }) => {
+  return (
+    <span
+      className={cn(
+        'font-medium text-sm text-gray-700 dark:text-gray-300 truncate',
+        className
+      )}
+    >
+      {children}
+    </span>
+  );
+};
+
+const Actions: React.FC<ActionsProps> = ({ children, className }) => {
+  return (
+    <div className={cn('flex items-center space-x-1 min-h-[28px]', className)}>
+      {children}
+    </div>
+  );
+};
+
+const PanelHeaderRoot: React.FC<PanelHeaderProps> = ({
+  children,
+  className,
+}) => {
+  return (
+    <div
+      className={cn(
+        'flex items-center justify-between',
+        'px-4 py-2 border-b border-gray-200/60 dark:border-gray-800/60',
+        'sticky top-0 bg-background/80 dark:bg-background/90 backdrop-blur-sm z-10',
+        className
+      )}
+    >
+      {children}
+    </div>
+  );
+};
+
+type PanelHeaderComponent = React.FC<PanelHeaderProps> & {
+  Title: React.FC<TitleProps>;
+  Actions: React.FC<ActionsProps>;
+};
+
+const PanelHeader = PanelHeaderRoot as PanelHeaderComponent;
+PanelHeader.Title = Title;
+PanelHeader.Actions = Actions;
+
 interface HeaderButtonProps extends React.ComponentProps<typeof Button> {
   tooltip: string;
 }
+
 const HeaderButton: React.FC<HeaderButtonProps> = ({
   tooltip,
   children,
@@ -274,3 +468,5 @@ const HeaderButton: React.FC<HeaderButtonProps> = ({
     </TooltipContent>
   </Tooltip>
 );
+
+export { PanelHeader };

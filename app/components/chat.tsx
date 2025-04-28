@@ -136,51 +136,6 @@ export default function Chat() {
             )}
             {/* You might add SettingsPanelTrigger back here if needed */}
           </div>
-          {/* ... Breadcrumb ... */}
-          {/* <Breadcrumb>
-            <BreadcrumbList className="sm:gap-1.5">
-              <BreadcrumbItem>
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <BreadcrumbLink href="#">Playground</BreadcrumbLink>
-                </motion.div>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage>Chat</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb> */}
-          {/* ... Header Buttons ... */}
-          {/* <div className="flex items-center gap-1 -my-2 -me-2">
-            <Button variant="ghost" className="px-2">
-              <RiCodeSSlashLine
-                className="text-muted-foreground sm:text-muted-foreground/70 size-5"
-                size={20}
-                aria-hidden="true"
-              />
-              <span className="max-sm:sr-only">Code</span>
-            </Button>
-            <Button variant="ghost" className="px-2">
-              <RiShareLine
-                className="text-muted-foreground sm:text-muted-foreground/70 size-5"
-                size={20}
-                aria-hidden="true"
-              />
-              <span className="max-sm:sr-only">Share</span>
-            </Button>
-            <Button variant="ghost" className="px-2">
-              <RiShareCircleLine
-                className="text-muted-foreground sm:text-muted-foreground/70 size-5"
-                size={20}
-                aria-hidden="true"
-              />
-              <span className="max-sm:sr-only">Export</span>
-            </Button>
-            <SettingsPanelTrigger />
-          </div> */}
         </div>
       </div>
       <ScrollArea className="p-2 flex-1 w-full">
@@ -267,7 +222,7 @@ export default function Chat() {
       {/* Footer */}
       <div className=" p-2 sticky bottom-0 pt-4 md:pt-8 z-50">
         <div className="max-w-3xl mx-auto bg-background rounded-[20px] pb-4 md:pb-8">
-          <div className="relative rounded-[20px] backdrop-blur-md bg-gradient-to-b from-background to-blue-500/5 bg-white/10 dark:bg-black/10 border border-white/20 focus-within:ring-2 focus-within:ring-blue-500/50 transition-all">
+          <div className="relative rounded-[20px] backdrop-blur-md bg-gradient-to-t from-background to-blue-500/5 bg-blue-500/10 dark:bg-black/10 border border-white/20 focus-within:ring-2 focus-within:ring-blue-500/50 transition-all">
             <TextareaAutosize
               // Removed fixed height class like sm:min-h-[84px]
               className="flex w-full resize-none border-0 bg-transparent px-4 py-3 text-[15px] leading-relaxed text-foreground placeholder:text-muted-foreground/70 focus:ring-0 focus-visible:outline-none disabled:cursor-not-allowed" // Keep other styles, ensure resize-none is present
